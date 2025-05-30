@@ -1,0 +1,6 @@
+services:
+  nginx-rtmp:
+    image: tiangolo/nginx-rtmp
+    container_name: nginx_rtmp_dev
+    ports:
+      - "1935:1935"
