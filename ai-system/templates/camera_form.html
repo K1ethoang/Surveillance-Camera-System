@@ -1,0 +1,71 @@
+<!-- templates/camera_form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    {% load static %}
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        .form-wrapper {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .form-label {
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="form-wrapper bg-white shadow-sm rounded p-4">
+            <h2 class="mb-4 text-center">{{ title }}</h2>
+            <form method="POST" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="{{ form.serial.id_for_label }}" class="form-label">Serial</label>
+                    <input type="text" name="{{ form.serial.name }}" id="{{ form.serial.id_for_label }}" 
+                           value="{{ form.serial.value|default:'' }}" class="form-control" required>
+                    {% if form.serial.errors %}
+                        <div class="text-danger small">{{ form.serial.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.location.id_for_label }}" class="form-label">Location</label>
+                    <input type="text" name="{{ form.location.name }}" id="{{ form.location.id_for_label }}" 
+                           value="{{ form.location.value|default:'' }}" class="form-control" required>
+                    {% if form.location.errors %}
+                        <div class="text-danger small">{{ form.location.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.stream_url.id_for_label }}" class="form-label">Stream URL</label>
+                    <input type="text" name="{{ form.stream_url.name }}" id="{{ form.stream_url.id_for_label }}" 
+                           value="{{ form.stream_url.value|default:'' }}" class="form-control" required>
+                    {% if form.stream_url.errors %}
+                        <div class="text-danger small">{{ form.stream_url.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}"
+                           {% if form.is_active.value %}checked{% endif %} class="form-check-input">
+                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Is Active</label>
+                    {% if form.is_active.errors %}
+                        <div class="text-danger small">{{ form.is_active.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">💾 Save</button>
+                    <a href="{% url 'camera_list' %}" class="btn btn-secondary">↩ Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
