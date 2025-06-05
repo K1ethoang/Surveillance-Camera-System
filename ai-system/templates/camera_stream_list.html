@@ -49,7 +49,9 @@
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="toggleCamera('{{ camera.id }}')">Toggle</button>
                         <a href="{% url 'camera_update' camera.id %}" class="btn btn-sm btn-outline-warning ms-2">Edit</a>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteCamera('{{ camera.id }}', '{{ camera.serial }}')">Delete</button>
                     </td>
+                    
                 </tr>
                 {% empty %}
                 <tr>
@@ -96,6 +98,40 @@
             statusElem.textContent = status;
             statusElem.className = data.is_active ? 'text-success fw-bold ellipsis-cell' : 'text-secondary fw-bold ellipsis-cell';
             statusElem.title = status;
+        });
+    }
+
+    function deleteCamera(cameraId, cameraSerial) {
+        if (!confirm(`Are you sure you want to delete camera ${cameraSerial}? This action cannot be undone.`)) {
+            return;
+        }
+    
+        fetch(`/api/camera_stream/${cameraId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to delete camera.');
+            return;
+        })
+        .then(data => {
+            // Xóa hàng tương ứng trong bảng
+            const row = document.querySelector(`button[onclick="deleteCamera('${cameraId}', '${cameraSerial}')"]`).closest('tr');
+            if (row) row.remove();
+    
+            // Hiện thông báo
+            const alertBox = document.getElementById('alert-box');
+            alertBox.innerHTML = `<div id="alert-msg" class="alert alert-danger" role="alert">Camera ${cameraSerial} deleted successfully.</div>`;
+            
+            setTimeout(() => {
+                const alertMsg = document.getElementById('alert-msg');
+                if (alertMsg) alertMsg.remove();
+            }, 3000);
+        })
+        .catch(err => {
+            alert(err.message);
         });
     }
 

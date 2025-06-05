@@ -20,7 +20,7 @@ from ai_app.views import CameraStreamTemplateView, camera_create, camera_update
 
 urlpatterns = [
     path('', CameraStreamTemplateView.as_view(), name='camera_list'),
-    path('camera/create/', camera_create, name='camera_create'),         # Trang tạo mới
+    path('camera/create/', camera_create, name='camera_create'),
     path('camera/<uuid:pk>/edit/', camera_update, name='camera_update'),
     path('admin/', admin.site.urls),
     path('api/', include('ai_app.urls'))
