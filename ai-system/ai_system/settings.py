@@ -136,7 +136,13 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'  
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}' if bool(int(os.getenv('USE_S3', default='0'))) else '/media/'
+
+STATIC_MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_MEDIA_URL = '/media/'
+STATIC_MEDIA_DIR = 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

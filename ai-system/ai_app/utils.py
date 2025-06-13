@@ -5,11 +5,10 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
 
-def save_snapshot_to_storage(frame, camera_serial: str, filename=None):
+def save_snapshot_to_storage(frame, camera_serial: str):
     date_now = datetime.now()
 
-    if filename is None:
-        filename = str(f'{camera_serial}_{date_now.timestamp()}')
+    file_name = str(f'{camera_serial}/{date_now.timestamp()}')
 
     # Convert frame to JPEG type
     ret, jpeg = cv2.imencode('.jpg', frame)
@@ -17,7 +16,7 @@ def save_snapshot_to_storage(frame, camera_serial: str, filename=None):
         return None
 
     file_content = ContentFile(jpeg.tobytes())
-    file_path = f'{date_now.strftime('%y%m%d')}/{filename}.jpg'
+    file_path = f'{date_now.strftime('%Y%m%d')}/{file_name}.jpg'
 
     try:
         default_storage.save(file_path, file_content)

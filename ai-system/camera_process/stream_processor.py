@@ -1,4 +1,5 @@
 import datetime
+import json
 import ray
 import torch
 import cv2
@@ -200,7 +201,7 @@ def detect_on_video(
 
 @ray.remote
 class StreamProcessor:
-    def __init__(self, camera_url, camera_serial, model_path=settings.MODEL_PATH_YOLO_11, device_str='cpu', score_threshold=0.6):
+    def __init__(self, camera_url, camera_serial, model_path, device_str='cpu', score_threshold=0.6):
         self.camera_url = camera_url
         self.camera_serial = camera_serial
         self.device = torch.device(device_str)
@@ -210,7 +211,13 @@ class StreamProcessor:
         self.model = load_model(self.model_path, self.device)
         
     def __del__(self):
-        self.stop()
+        try:
+            self.stop()
+        except:
+            pass
+        
+    def is_alive(self):
+        return self.running
 
     def start(self):
         self.running = True
@@ -256,18 +263,25 @@ class StreamProcessor:
                     )
 
                     accident_indices = [i for i, label in enumerate(labels) if CLASSES[label] == 'accident']
-                    accident_boxes = [boxes[i] for i in accident_indices]
-                    if accident_boxes:
+                    if len(accident_indices) > 0:
+                        # image_url = save_snapshot_to_storage(frame=frame, camera_serial=self.camera_serial)
+                        
+                        detections_clean = {
+                            'boxes': [box.tolist() for box in detections['boxes']],
+                            'scores': [float(score) for score in detections['scores']],
+                            'labels': [CLASSES[label] for label in detections['labels']],
+                        }
+                        
                         message = {
                             'camera_url': self.camera_url,
                             'camera_serial': self.camera_serial,
-                            'snapshot_url': save_snapshot_to_storage(frame=frame, camera_serial=self.camera_serial),
-                            'detections': detections,
+                            # 'image_url': image_url,
+                            'detections': detections_clean,
                             'detected_at': datetime.datetime.now().timestamp(),
                         }
                         self.publish_kafka(message)
                     
-                    time.sleep(0.1)  # Giảm tải CPU
+                    time.sleep(0.2)  # Giảm tải CPU
 
                 cap.release()
                 print(f"[!] Released video capture for {self.camera_url}, will retry...")
@@ -282,4 +296,5 @@ class StreamProcessor:
         self.running = False
         
     def publish_kafka(self, message: Dict):
-        print(message)
+        message_to_send = json.dumps(message).encode('utf-8')
+        print(message_to_send)
