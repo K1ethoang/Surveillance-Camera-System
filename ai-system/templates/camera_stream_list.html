@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Camera Streams</title>
+    
+    {% load static %}
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        .ellipsis-cell {
+            max-width: 150px;          /* Giới hạn chiều rộng */
+            white-space: nowrap;       /* Không xuống dòng */
+            overflow: hidden;          /* Ẩn phần tràn */
+            text-overflow: ellipsis;   /* Hiển thị dấu ... */
+            cursor: help;              /* Con trỏ dạng tooltip */
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <h1 class="mb-4">📷 Camera Streams</h1>
+
+        <div id="alert-box"></div>
+
+        <a href="{% url 'camera_create' %}" class="btn btn-success mb-3">+ Add New Camera</a>
+
+        <table class="table table-bordered table-striped bg-white">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Serial</th>
+                    <th>Location</th>
+                    <th>Stream URL</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for camera in cameras %}
+                <tr>
+                    <td class="ellipsis-cell" title="{{ camera.id }}">{{ camera.id }}</td>
+                    <td class="ellipsis-cell" title="{{ camera.serial }}">{{ camera.serial }}</td>
+                    <td class="ellipsis-cell" title="{{ camera.location }}">{{ camera.location }}</td>
+                    <td class="ellipsis-cell" title="{{ camera.stream_url }}">{{ camera.stream_url }}</td>
+                    <td id="status-{{ camera.id }}" class="{% if camera.is_active %}text-success fw-bold{% else %}text-secondary fw-bold{% endif %} ellipsis-cell" title="{{ camera.is_active|yesno:'Active,Inactive' }}">
+                        {{ camera.is_active|yesno:"Active,Inactive" }}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="toggleCamera('{{ camera.id }}')">Toggle</button>
+                        <a href="{% url 'camera_update' camera.id %}" class="btn btn-sm btn-outline-warning ms-2">Edit</a>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteCamera('{{ camera.id }}', '{{ camera.serial }}')">Delete</button>
+                    </td>
+                    
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No cameras available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+<script>
+    function toggleCamera(cameraId) {
+        const statusElem = document.getElementById(`status-${cameraId}`);
+        const currentStatus = statusElem.textContent.trim();
+
+        if (currentStatus === 'Active') {
+            const confirmed = confirm('Are you sure you want to deactivate this camera?');
+            if (!confirmed) return;
+        }
+        
+        fetch(`/api/camera_stream/${cameraId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            const status = data.is_active ? 'Active' : 'Inactive';
+            const alertType = data.is_active ? 'success' : 'secondary';
+            const message = `Camera ${data.serial} is now ${status}`;
+
+            const alertBox = document.getElementById('alert-box');
+            alertBox.innerHTML = `<div id="alert-msg" class="alert alert-${alertType}" role="alert">${message}</div>`;
+            
+            setTimeout(() => {
+                const alertMsg = document.getElementById('alert-msg');
+                if (alertMsg) alertMsg.remove();
+            }, 3000);
+
+            const statusElem = document.getElementById(`status-${data.id}`);
+            statusElem.textContent = status;
+            statusElem.className = data.is_active ? 'text-success fw-bold ellipsis-cell' : 'text-secondary fw-bold ellipsis-cell';
+            statusElem.title = status;
+        });
+    }
+
+    function deleteCamera(cameraId, cameraSerial) {
+        if (!confirm(`Are you sure you want to delete camera ${cameraSerial}? This action cannot be undone.`)) {
+            return;
+        }
+    
+        fetch(`/api/camera_stream/${cameraId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to delete camera.');
+            return;
+        })
+        .then(data => {
+            // Xóa hàng tương ứng trong bảng
+            const row = document.querySelector(`button[onclick="deleteCamera('${cameraId}', '${cameraSerial}')"]`).closest('tr');
+            if (row) row.remove();
+    
+            // Hiện thông báo
+            const alertBox = document.getElementById('alert-box');
+            alertBox.innerHTML = `<div id="alert-msg" class="alert alert-danger" role="alert">Camera ${cameraSerial} deleted successfully.</div>`;
+            
+            setTimeout(() => {
+                const alertMsg = document.getElementById('alert-msg');
+                if (alertMsg) alertMsg.remove();
+            }, 3000);
+        })
+        .catch(err => {
+            alert(err.message);
+        });
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('[name=csrf-token]').content;
+    }
+</script>
+
+</html>
