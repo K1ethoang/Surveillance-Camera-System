@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Lịch sử cảnh báo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Lịch sử cảnh báo</h2>
+
+    {% if alerts %}
+        {% for alert in alerts %}
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <strong>Camera:</strong> {{ alert.camera_serial }} 
+                    <span class="float-end">{{ alert.detect_at }}</span>
+                </div>
+                <div class="card-body">
+                    <p><strong>Địa chỉ stream:</strong> {{ alert.camera_url }}</p>
+                    <div>
+                        <strong>Phát hiện:</strong>
+                        <ul class="list-group">
+                            {% for label in alert.detections.labels %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ label }}
+                                    <span class="badge bg-primary">
+                                        Score: {{ alert.detections.scores|index:forloop.counter0|floatformat:2 }}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <details class="mt-3">
+                        <summary class="text-info">📄 Xem chi tiết dữ liệu thô</summary>
+                        <div class="position-relative mt-2">
+                            <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 me-2 mt-2"
+                                    onclick="copyToClipboard('raw-json-{{ forloop.counter }}')">
+                                📋 Copy
+                            </button>
+                            <pre id="raw-json-{{ forloop.counter }}" class="bg-light p-3 border rounded small overflow-auto"
+                                 style="max-height: 300px;">{{ alert|json_pretty }}</pre>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted text-center">Không có cảnh báo nào trong 10 ngày gần đây.</p>
+    {% endif %}
+
+    {% if alerts.has_other_pages %}
+        <div class="d-flex justify-content-center">
+            <nav>
+                <ul class="pagination">
+                    {% if alerts.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ alerts.previous_page_number }}">«</a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Trang {{ alerts.number }} / {{ alerts.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if alerts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ alerts.next_page_number }}">»</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    function copyToClipboard(elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const text = el.textContent || el.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('📋 Đã copy vào clipboard!');
+        }).catch(err => {
+            console.error('Lỗi khi copy:', err);
+            alert('❌ Không thể copy');
+        });
+    }
+    </script>
+{% endblock %}
