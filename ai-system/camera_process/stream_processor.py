@@ -277,7 +277,7 @@ class StreamProcessor:
                             'camera_serial': self.camera_serial,
                             # 'image_url': image_url,
                             'detections': detections_clean,
-                            'detected_at': datetime.datetime.now().timestamp(),
+                            'detect_at': int(datetime.datetime.now().timestamp()),
                         }
                         self.publish_kafka(message)
                     
@@ -298,3 +298,6 @@ class StreamProcessor:
     def publish_kafka(self, message: Dict):
         message_to_send = json.dumps(message).encode('utf-8')
         print(message_to_send)
+        with open('detect.json', 'a', encoding='utf-8') as f:
+            json.dump(message, f, ensure_ascii=False)
+            f.write('\n')

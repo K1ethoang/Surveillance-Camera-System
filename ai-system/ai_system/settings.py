@@ -154,4 +154,4 @@ KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_SERVER','localhost:9092')
 KAFKA_CONSUMER_GROUP_ID = os.getenv('KAFKA_CONSUMER_GROUP_ID','ai_result_group')
 KAFA_TOPIC = os.getenv('KAFKA_TOPIC','ai_result')
 
-MODEL_PATH_YOLO_11 = os.getenv('MODEL_PATH_YOLO_11', './weights/yolov11_last.pt')
+MODEL_PATH_YOLO_11 = os.getenv('MODEL_PATH_YOLO_11', './weights/yolo11_n.pt')
