@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Chi tiết tai nạn{% endblock %}
+{% block content %}
+    <h1>Chi tiết tai nạn</h1>
+    <p><strong>Thời gian:</strong> {{ accident.timestamp }}</p>
+    <p><strong>Mô tả:</strong> {{ accident.description }}</p>
+    <a href="{% url 'accident_update' accident.pk %}">Sửa</a> |
+    <a href="{% url 'accident_delete' accident.pk %}">Xóa</a> |
+    <a href="{% url 'accident_list' %}">← Quay lại danh sách</a>
+{% endblock %}

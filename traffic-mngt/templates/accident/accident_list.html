@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Danh sách tai nạn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📷 Danh sách tai nạn</h2>
+        <a href="{% url 'accident_create' %}" class="btn btn-success">
+            ➕ Tạo mới
+        </a>
+    </div>
+
+    {% if accidents %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Thời gian tạo</th>
+                        <th scope="col">Camera</th>
+                        <th scope="col">Ảnh chụp</th>
+                        <th scope="col">Người xác nhận</th>
+                        <th scope="col">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for accident in accidents %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ accident.created_at|date:"d/m/Y H:i:s" }}</td>
+                            <td>{{ accident.camera_serial }}</td>
+                            <td>
+                                {% if accident.snapshot %}
+                                    <img src="{{ accident.snapshot.url }}" alt="Ảnh chụp" class="img-thumbnail" style="max-width: 120px;">
+                                {% else %}
+                                    Không có ảnh
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ accident.confirmed_by.email|default:"Chưa xác nhận" }}
+                            </td>
+                            <td>
+                                <a href="{% url 'accident_update' accident.pk %}" class="btn btn-sm btn-outline-primary me-2">Sửa</a>
+                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ accident.pk }}">
+                                    Xóa
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Modal xác nhận xóa -->
+                        <div class="modal fade" id="deleteModal{{ accident.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ accident.pk }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form method="post" action="{% url 'accident_delete' accident.pk %}">
+                                {% csrf_token %}
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="deleteModalLabel{{ accident.pk }}">⚠️ Xác nhận xóa tai nạn</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Camera:</strong> {{ accident.camera_serial }}</p>
+                                    <p><strong>Thời gian tạo:</strong> {{ accident.created_at|date:"d/m/Y H:i:s" }}</p>
+                                    {% if accident.snapshot %}
+                                    <div class="text-center mb-3">
+                                        <img src="{{ accident.snapshot.url }}" alt="Ảnh tai nạn" class="img-fluid rounded shadow-sm" style="max-height: 200px;">
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted fst-italic">Không có ảnh được lưu.</p>
+                                    {% endif %}
+                                    <p>Bạn có chắc chắn muốn xóa tai nạn này?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-danger">🗑️ Xóa</button>
+                                </div>
+                                </form>
+                            </div>
+                            </div>
+                        </div>
+  
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if accidents.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if accidents.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ accidents.previous_page_number }}">« Trước</a>
+                    </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Trang {{ accidents.number }} / {{ accidents.paginator.num_pages }}</span>
+                </li>
+                {% if accidents.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ accidents.next_page_number }}">Tiếp »</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            Không có tai nạn nào được ghi nhận.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
