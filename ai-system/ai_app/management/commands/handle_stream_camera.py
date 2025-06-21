@@ -34,7 +34,7 @@ class Command(BaseCommand):
         # ✅ Loop giữ tiến trình chạy để actor tồn tại
         try:
             while True:
-                cleanup_dead_actors()
+                # cleanup_dead_actors()
                 time.sleep(10)
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"❌ Error occurred: {e}"))
