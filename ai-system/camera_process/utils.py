@@ -36,4 +36,4 @@ def cleanup_dead_actors():
                 ray.kill(actor)
                 print(f"[-] Actor for cam_id {cam_id} killed.")
             except Exception as e:
-                print(f"[!] Error killing actor {cam_id}: {e}")        
+                print(f"[!] Error killing actor {cam_id}: {e}")

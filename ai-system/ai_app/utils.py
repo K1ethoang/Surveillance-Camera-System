@@ -16,12 +16,12 @@ def save_snapshot_to_storage(frame, camera_serial: str):
         return None
 
     file_content = ContentFile(jpeg.tobytes())
-    file_path = f'{date_now.strftime('%Y%m%d')}/{file_name}.jpg'
+    file_key = f'{date_now.strftime('%Y%m%d')}/{file_name}'
 
     try:
-        default_storage.save(file_path, file_content)
-        url = default_storage.url(file_path)
-        return url
+        default_storage.save(file_key, file_content)
+        url = default_storage.url(file_key)
+        return file_key, url
     except Exception as e:
         print(f"Error saving snapshot: {e}")
         return None

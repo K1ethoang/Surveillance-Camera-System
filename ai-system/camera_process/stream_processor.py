@@ -10,6 +10,7 @@ from typing import Dict, List, Optional
 from ultralytics import YOLO
 from ai_app.utils import save_snapshot_to_storage
 from django.conf import settings
+from confluent_kafka import Producer
 
 # Global variables
 CLASSES = ['accident', 'bicycle', 'bus', 'car', 'motorcycle', 'person', 'truck']
@@ -201,7 +202,7 @@ def detect_on_video(
 
 @ray.remote
 class StreamProcessor:
-    def __init__(self, camera_url, camera_serial, model_path, device_str='cpu', score_threshold=0.6):
+    def __init__(self, camera_url, camera_serial, model_path, device_str='cpu', score_threshold=0.6, verbose=False):
         self.camera_url = camera_url
         self.camera_serial = camera_serial
         self.device = torch.device(device_str)
@@ -209,6 +210,7 @@ class StreamProcessor:
         self.score_threshold = score_threshold
         self.running = False
         self.model = load_model(self.model_path, self.device)
+        self.verbose = verbose
         
     def __del__(self):
         try:
@@ -222,6 +224,7 @@ class StreamProcessor:
     def start(self):
         self.running = True
         print(f"[+] Starting processing for {self.camera_url}")
+        n_frame_to_pass = 5
 
         while self.running:
             try:
@@ -241,13 +244,16 @@ class StreamProcessor:
                         print(f"[!] Failed to read frame from {self.camera_url}. Reconnecting in 5s...")
                         break  # Reconnect outer loop
 
-                    frame_count += 1
+                    # frame_count += 1
+                    # if frame_count % n_frame_to_pass != 0:
+                    #     continue
+                    
                     if frame_count % 10 == 0:
                         elapsed = time.time() - start_time
                         fps_processing = frame_count / elapsed
                         print(f"[{self.camera_url}] Processing frame {frame_count} ({fps_processing:.2f} FPS)")
 
-                    results = self.model(frame, conf=self.score_threshold)
+                    results = self.model(frame, conf=self.score_threshold, verbose=self.verbose)
                     detections = process_results(results, CLASSES)
                     boxes = detections['boxes']
                     scores = detections['scores']
@@ -264,7 +270,7 @@ class StreamProcessor:
 
                     accident_indices = [i for i, label in enumerate(labels) if CLASSES[label] == 'accident']
                     if len(accident_indices) > 0:
-                        # image_url = save_snapshot_to_storage(frame=frame, camera_serial=self.camera_serial)
+                        snapshot_key, image_url = save_snapshot_to_storage(frame=frame, camera_serial=self.camera_serial)
                         
                         detections_clean = {
                             'boxes': [box.tolist() for box in detections['boxes']],
@@ -275,11 +281,12 @@ class StreamProcessor:
                         message = {
                             'camera_url': self.camera_url,
                             'camera_serial': self.camera_serial,
-                            # 'image_url': image_url,
+                            'snapshot_key': snapshot_key,
                             'detections': detections_clean,
                             'detect_at': int(datetime.datetime.now().timestamp()),
                         }
-                        self.publish_kafka(message)
+                        result = push_to_kafka(topic=settings.KAFKA_TOPIC,message=json.dumps(message).encode('utf-8'))
+                        print(result)
                     
                     time.sleep(0.2)  # Giảm tải CPU
 
@@ -295,9 +302,27 @@ class StreamProcessor:
     def stop(self):
         self.running = False
         
-    def publish_kafka(self, message: Dict):
-        message_to_send = json.dumps(message).encode('utf-8')
-        print(message_to_send)
-        with open('detect.json', 'a', encoding='utf-8') as f:
-            json.dump(message, f, ensure_ascii=False)
-            f.write('\n')
+
+PRODUCER_CONFIG = {
+    "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
+    "retries": 10,  # Set the number of retries to 10
+    "retry.backoff.ms": 100,  # Wait 100 milliseconds between retries
+}    
+
+def delivery_report(err, msg):
+    if err is not None:
+        print(f"Message delivery failed: {err}")
+    else:
+        print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+
+
+def push_to_kafka(topic,message,config=PRODUCER_CONFIG):
+    producer_config = config
+    try:
+        producer = Producer(producer_config)
+        producer.produce(topic, message, callback=delivery_report)
+        producer.flush()
+    except Exception as e:
+        print('Push message {} with error {}'.format(message, e))
+        return False
+    return True
