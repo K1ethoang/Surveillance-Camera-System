@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import User, Accident, AccidentDetail
+from .models import User, Accident
 
 
 class CustomUserAdmin(UserAdmin):
@@ -34,36 +34,14 @@ class CustomUserAdmin(UserAdmin):
 admin.site.register(User, CustomUserAdmin)
 
 
-class AccidentDetailInline(admin.TabularInline):
-    model = AccidentDetail
-
-    fields = ('label', 'confidence', 'bbox')
-    extra = 0  # Không hiện dòng trống thêm mặc định
-
-class AccidentDetailAdmin(admin.ModelAdmin):
-    model = AccidentDetail
-
-    list_display = ('accident', 'label', 'confidence', 'bbox')
-    list_filter = ('label',)
-
-    search_fields = ('accident__camera_serial', 'label')
-    ordering = ('-created_at',)
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-admin.site.register(AccidentDetail, AccidentDetailAdmin)
-
-
 class AccidentAdmin(admin.ModelAdmin):
     model = Accident
 
-    list_display = ('detected_at', 'camera_serial', 'confidence', 'confirmed_by', 'snapshot_preview',)
+    list_display = ('created_at', 'camera_serial', 'confirmed_by', 'snapshot_preview',)
     list_filter =  ('camera_serial','confirmed_by',)
 
     ordering = ("-created_at",)
-    readonly_fields = ("detected_at", "confirmed_by", "camera_serial", "confidence", "snapshot_url")
-    inlines = [AccidentDetailInline]
+    readonly_fields = ("created_at", "confirmed_by", "camera_serial", "snapshot")
 
     def snapshot_preview(self, obj):
         if obj.snapshot_url:

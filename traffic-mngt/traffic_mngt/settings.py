@@ -114,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 USE_I18N = True
 
@@ -135,3 +135,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Kafka
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_SERVER','localhost:9092')
 CONSUMER_GROUP_ID = os.getenv('KAFKA_CONSUMER_GROUP_ID','traffic_mngt_group')
+
+
+DB_MONGO_HOST = os.getenv('DB_MONGO_HOST', '127.0.0.1')
+DB_MONGO_PORT = int(os.getenv('DB_MONGO_PORT', '27017'))
+DB_MONGO_USER = os.getenv('DB_MONGO_USER', 'admin')
+DB_MONGO_PASSWORD = os.getenv('DB_MONGO_PASSWORD', '123456')
+DB_MONGO_DB = os.getenv('DB_MONGO_DB', 'history_alert')
