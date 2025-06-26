@@ -200,6 +200,8 @@ def detect_on_video(
     cap.release()
 
 
+KAFKA_TOPIC = settings.KAFKA_TOPIC
+
 @ray.remote
 class StreamProcessor:
     def __init__(self, camera_url, camera_serial, model_path, device_str='cpu', score_threshold=0.6, verbose=False):
@@ -285,7 +287,7 @@ class StreamProcessor:
                             'detections': detections_clean,
                             'detect_at': int(datetime.datetime.now().timestamp()),
                         }
-                        result = push_to_kafka(topic=settings.KAFKA_TOPIC,message=json.dumps(message).encode('utf-8'))
+                        result = push_to_kafka(topic=KAFKA_TOPIC,message=json.dumps(message).encode('utf-8'))
                         print(result)
                     
                     time.sleep(0.2)  # Giảm tải CPU
