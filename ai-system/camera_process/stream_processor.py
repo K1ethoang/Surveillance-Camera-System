@@ -8,7 +8,7 @@ import sys
 import os
 from typing import Dict, List, Optional
 from ultralytics import YOLO
-from ai_app.utils import save_snapshot_to_storage
+from ai_app.utils import push_to_kafka, save_snapshot_to_storage
 from django.conf import settings
 
 

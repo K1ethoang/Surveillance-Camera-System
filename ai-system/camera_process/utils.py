@@ -2,7 +2,6 @@ import ray
 from .registry import camera_actors
 from .stream_processor import StreamProcessor
 from django.conf import settings
-from confluent_kafka import Producer
 
 
 def start_stream_camera(cam):
@@ -39,27 +38,4 @@ def cleanup_dead_actors():
                 print(f"[-] Actor for cam_id {cam_id} killed.")
             except Exception as e:
                 print(f"[!] Error killing actor {cam_id}: {e}")
-
-PRODUCER_CONFIG = {
-    "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
-    "retries": 10,  # Set the number of retries to 10
-    "retry.backoff.ms": 100,  # Wait 100 milliseconds between retries
-}    
-
-def delivery_report(err, msg):
-    if err is not None:
-        print(f"Message delivery failed: {err}")
-    else:
-        print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
-
-
-def push_to_kafka(topic,message,config=PRODUCER_CONFIG):
-    producer_config = config
-    try:
-        producer = Producer(producer_config)
-        producer.produce(topic, message, callback=delivery_report)
-        producer.flush()
-    except Exception as e:
-        print('Push message {} with error {}'.format(message, e))
-        return False
-    return True
+                

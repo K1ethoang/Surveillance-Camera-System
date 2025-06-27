@@ -5,7 +5,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from camera_process.utils import push_to_kafka
+from .utils import push_to_kafka
 from .models import CameraStream
 from .serializers import CameraStreamSerializer
 from django.views.generic import TemplateView

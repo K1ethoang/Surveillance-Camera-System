@@ -92,7 +92,7 @@
         // Chuyển đổi timestamp detect_at nếu có
         let detectTimeStr = "";
         if (data.detect_at) {
-            const detectDate = new Date(data.detect_at);
+            const detectDate = new Date(data.detect_at * 1000);
             detectTimeStr = detectDate.toLocaleString('vi-VN', {
                 hour12: false,
                 day: '2-digit', month: '2-digit', year: 'numeric',
@@ -102,22 +102,37 @@
 
         showToast(`📸 Cảnh báo mới từ camera ${camera} lúc ${detectTimeStr}`);
 
-        fetch(window.location.href)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newContent = doc.querySelector('.container').innerHTML;
-                document.querySelector('.container').innerHTML = newContent;
-            });
+        // Chỉ thực hiện reload nếu đang ở trang Lịch sử cảnh báo
+        if (window.location.pathname === '/history-alert/') {
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+        
+                    const newContent = doc.querySelector('#alert-history');
+                    const currentContent = document.querySelector('#alert-history');
 
-        const firstCard = document.querySelector('.card');
-        if (firstCard) {
-            firstCard.classList.add('border-success', 'border', 'border-2');
-            setTimeout(() => {
-                firstCard.classList.remove('border-success', 'border', 'border-2');
-            }, 3000); // hiệu ứng tạm 3s
+                    console.log('Reloading content:', newContent, currentContent);
+        
+                    if (newContent && currentContent) {
+                        currentContent.innerHTML = newContent.innerHTML;
+
+                        const firstCard = document.querySelector('.card');
+                        if (firstCard) {
+                            firstCard.classList.add('border-danger', 'border', 'border-2');
+                            setTimeout(() => {
+                                firstCard.classList.remove('border-danger', 'border', 'border-2');
+                            }, 5000); // hiệu ứng tạm 5s
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Lỗi khi reload nội dung trang:', err);
+                });
         }
+
+        
     };
 
     function showToast(message) {
