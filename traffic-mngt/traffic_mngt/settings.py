@@ -31,6 +31,8 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -69,7 +71,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'traffic_mngt.wsgi.application'
+ASGI_APPLICATION = "traffic_mngt.asgi.application"
 
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(os.getenv("REDIS_HOST", "127.0.0.1"), int(os.getenv("REDIS_PORT", '6379')))],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -126,6 +138,11 @@ AUTH_USER_MODEL = "main_app.User"
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -134,7 +151,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Kafka
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_SERVER','localhost:9092')
-CONSUMER_GROUP_ID = os.getenv('KAFKA_CONSUMER_GROUP_ID','traffic_mngt_group')
+KAFKA_CONSUMER_GROUP_ID = os.getenv('KAFKA_CONSUMER_GROUP_ID','traffic_mngt_group')
+KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'ai_result')
 
 
 DB_MONGO_HOST = os.getenv('DB_MONGO_HOST', '127.0.0.1')

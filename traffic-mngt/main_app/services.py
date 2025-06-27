@@ -34,3 +34,10 @@ class MongoService:
         # Sắp xếp giảm dần theo detect_at nếu có
         alerts.sort(key=lambda x: x.get("detect_at", 0), reverse=True)
         return alerts
+    
+    def save_alert(self, collection_name, message) -> bool:
+        try:
+            self.repo.insert_one(collection_name, message)            
+            return True
+        except Exception as e:
+            return False

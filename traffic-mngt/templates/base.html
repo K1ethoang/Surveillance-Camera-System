@@ -45,6 +45,34 @@
         {% endif %}
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+    <style>
+    .toast-custom {
+        min-width: 280px;
+        max-width: 400px;
+        margin-bottom: 0.5rem;
+        animation: slide-in 0.5s ease-out, fade-out 0.5s ease-in 5s forwards;
+    }
+    @keyframes slide-in {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    @keyframes fade-out {
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+    </style>
+
     <!-- Content -->
     <main class="container my-4">
         {% block content %}{% endblock %}
@@ -53,4 +81,78 @@
     <!-- Bootstrap JS -->
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 </body>
+
+
+<script>
+    const socket = new WebSocket('ws://' + window.location.host + '/ws/alerts/');
+
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const camera = data.camera_serial || "Không rõ";
+        // Chuyển đổi timestamp detect_at nếu có
+        let detectTimeStr = "";
+        if (data.detect_at) {
+            const detectDate = new Date(data.detect_at);
+            detectTimeStr = detectDate.toLocaleString('vi-VN', {
+                hour12: false,
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+
+        showToast(`📸 Cảnh báo mới từ camera ${camera} lúc ${detectTimeStr}`);
+
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.querySelector('.container').innerHTML;
+                document.querySelector('.container').innerHTML = newContent;
+            });
+
+        const firstCard = document.querySelector('.card');
+        if (firstCard) {
+            firstCard.classList.add('border-success', 'border', 'border-2');
+            setTimeout(() => {
+                firstCard.classList.remove('border-success', 'border', 'border-2');
+            }, 3000); // hiệu ứng tạm 3s
+        }
+    };
+
+    function showToast(message) {
+        const toastContainer = document.getElementById('toast-container');
+        const toastId = 'toast-' + Date.now();
+
+        const toastHTML = `
+            <div id="${toastId}" class="toast border-start border-2 border-warning shadow-sm mb-2 bg-white" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                <div class="toast-body text-dark">
+                    🔔 <strong class="me-1">Cảnh báo:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Đóng"></button>
+                </div>
+            </div>
+        `;
+
+        // Append new toast
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+
+        // Show toast
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+        toast.show();
+
+        // Auto remove after hidden
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
+    }
+    
+    function removeToast(id) {
+        const toast = document.getElementById(id);
+        if (toast) toast.remove();
+    }
+</script>
+
 </html>
