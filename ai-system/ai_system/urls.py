@@ -16,12 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from ai_app.views import CameraStreamTemplateView, camera_create, camera_update
+from ai_app.views import CameraStreamTemplateView, camera_create, camera_update, send_mock_alert_view
 
 urlpatterns = [
     path('', CameraStreamTemplateView.as_view(), name='camera_list'),
     path('camera/create/', camera_create, name='camera_create'),
     path('camera/<uuid:pk>/edit/', camera_update, name='camera_update'),
+    path('mock_detect/', send_mock_alert_view, name='mock_detect'),
     path('admin/', admin.site.urls),
-    path('api/', include('ai_app.urls'))
+    path('api/', include('ai_app.urls')),
 ]

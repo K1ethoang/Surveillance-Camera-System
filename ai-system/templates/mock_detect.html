@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Gửi dữ liệu mô phỏng</title>
+    {% load static %}
+    <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        .form-wrapper {
+            max-width: 650px;
+            margin: auto;
+        }
+
+        textarea.form-control {
+            font-family: monospace;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="form-wrapper bg-white p-4 shadow-sm rounded">
+            {% if success %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                </div>
+            {% elif error %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                </div>
+            {% endif %}
+
+            <h2 class="mb-4 text-center">🚨 Gửi dữ liệu mô phỏng cảnh báo</h2>
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="camera_serial" class="form-label">Camera Serial</label>
+                    <input type="text" class="form-control" id="camera_serial" name="camera_serial" required
+                        value="qbDa7B44tJmCxO">
+                </div>
+
+                <div class="mb-3">
+                    <label for="camera_url" class="form-label">Camera URL</label>
+                    <input type="text" class="form-control" id="camera_url" name="camera_url" required
+                        value="rtmp://35.197.153.95:1935/live/cam1">
+                </div>
+
+                <div class="mb-3">
+                    <label for="detect_at" class="form-label">Thời gian phát hiện (UNIX timestamp)</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="detect_at" name="detect_at" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="updateTimestamp()">🕒 Lấy lại</button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="boxes" class="form-label">Boxes (JSON Array)</label>
+                    <textarea class="form-control" id="boxes" name="boxes" required>[
+    [155.67, 613.29, 627.72, 1632.38],
+    [177.04, 1070.44, 605.54, 1610.47]
+]</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="scores" class="form-label">Scores (JSON Array)</label>
+                    <textarea class="form-control" id="scores" name="scores" required>[0.8702691793441772,0.8149290084838867]</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="labels" class="form-label">Labels (JSON Array)</label>
+                    <textarea class="form-control" id="labels" name="labels" required>["accident", "motorcycle"]</textarea>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">🚀 Gửi</button>
+                    <a href="{% url 'camera_list' %}" class="btn btn-secondary">↩ Quay lại danh sách camera</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+<script>
+    function updateTimestamp() {
+        const detectInput = document.getElementById("detect_at");
+        detectInput.value = Math.floor(Date.now() / 1000);
+    }
+
+    document.addEventListener("DOMContentLoaded", updateTimestamp);
+</script>
+
+<script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</html>

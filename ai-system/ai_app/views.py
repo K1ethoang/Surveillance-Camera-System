@@ -1,12 +1,16 @@
 # your_app/views.py
+import json
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from camera_process.utils import push_to_kafka
 from .models import CameraStream
 from .serializers import CameraStreamSerializer
 from django.views.generic import TemplateView
 from .forms import CameraStreamForm
+from django.conf import settings
 
 class CameraStreamViewSet(viewsets.ModelViewSet):
     queryset = CameraStream.objects.all()
@@ -48,3 +52,32 @@ class CameraStreamTemplateView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['cameras'] = CameraStream.objects.all()
         return context
+
+KAFKA_TOPIC = settings.KAFKA_TOPIC
+    
+def send_mock_alert_view(request):
+    if request.method == 'POST':
+        try:
+            data = {
+                "camera_url": request.POST.get("camera_url"),
+                "camera_serial": request.POST.get("camera_serial"),
+                "detect_at": int(request.POST.get("detect_at")),
+                "detections": {
+                    "boxes": json.loads(request.POST.get("boxes")),
+                    "scores": json.loads(request.POST.get("scores")),
+                    "labels": json.loads(request.POST.get("labels"))
+                }
+            }
+            push_to_kafka(topic=settings.KAFKA_TOPIC, message=json.dumps(data).encode('utf-8'))
+            return render(request, "mock_detect.html", {
+                "success": True,
+                "message": f"Đã gửi cảnh báo mô phỏng thành công cho camera {data['camera_serial']}!",
+            })
+        except Exception as e:
+            return render(request, "mock_detect.html", {
+                "error": True,
+                "message": f"Lỗi khi gửi dữ liệu: {str(e)}"
+            })
+
+    return render(request, "mock_detect.html")
+

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from ultralytics import YOLO
 from ai_app.utils import save_snapshot_to_storage
 from django.conf import settings
-from confluent_kafka import Producer
+
 
 # Global variables
 CLASSES = ['accident', 'bicycle', 'bus', 'car', 'motorcycle', 'person', 'truck']
@@ -303,28 +303,3 @@ class StreamProcessor:
         
     def stop(self):
         self.running = False
-        
-
-PRODUCER_CONFIG = {
-    "bootstrap.servers": settings.KAFKA_BOOTSTRAP_SERVERS,
-    "retries": 10,  # Set the number of retries to 10
-    "retry.backoff.ms": 100,  # Wait 100 milliseconds between retries
-}    
-
-def delivery_report(err, msg):
-    if err is not None:
-        print(f"Message delivery failed: {err}")
-    else:
-        print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
-
-
-def push_to_kafka(topic,message,config=PRODUCER_CONFIG):
-    producer_config = config
-    try:
-        producer = Producer(producer_config)
-        producer.produce(topic, message, callback=delivery_report)
-        producer.flush()
-    except Exception as e:
-        print('Push message {} with error {}'.format(message, e))
-        return False
-    return True
