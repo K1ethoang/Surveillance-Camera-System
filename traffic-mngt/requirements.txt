@@ -18,12 +18,14 @@ Django==5.2.1
 django-storages==1.14.6
 djangorestframework==3.16.0
 dnspython==2.7.0
+et_xmlfile==2.0.0
 hyperlink==21.0.0
 idna==3.10
 incremental==24.7.2
 jmespath==1.0.1
 msgpack==1.1.1
 mysqlclient==2.2.7
+openpyxl==3.1.5
 pillow==11.2.1
 pyasn1==0.6.1
 pyasn1_modules==0.4.2

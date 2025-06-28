@@ -5,9 +5,14 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>📷 Danh sách tai nạn</h2>
-        <a href="{% url 'accident_create' %}" class="btn btn-success">
-            ➕ Tạo mới
-        </a>
+        <div>
+            <a href="{% url 'accident_create' %}" class="btn btn-success me-2">
+                ➕ Tạo mới
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                📥 Xuất Excel
+            </button>
+        </div>
     </div>
 
     {% if accidents %}
@@ -107,5 +112,81 @@
             Không có tai nạn nào được ghi nhận.
         </div>
     {% endif %}
+
+    <!-- Modal Export -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="exportForm" method="get" action="{% url 'accident_export_excel' %}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="exportModalLabel">Xuất danh sách tai nạn</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                    <label for="start_date" class="form-label">Từ ngày</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ now|date:'Y' }}-01-01">
+                    </div>
+                    <div class="mb-3">
+                    <label for="end_date" class="form-label">Đến ngày</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ now|date:'Y-m-d' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button id="exportButton" type="submit" class="btn btn-primary">
+                        Tải Excel
+                        <span id="exportSpinner" class="spinner-border text-light ms-2 d-none" role="status" style="width: 1rem; height: 1rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const exportForm = document.getElementById("exportForm");
+      const exportButton = document.getElementById("exportButton");
+      const exportSpinner = document.getElementById("exportSpinner");
+    
+      exportForm.addEventListener("submit", function (e) {
+        e.preventDefault(); // Ngăn form reload trang
+    
+        const startDate = document.getElementById("start_date").value;
+        const endDate = document.getElementById("end_date").value;
+    
+        exportButton.disabled = true;
+        exportSpinner.classList.remove("d-none");
+    
+        fetch(`/accident/export/?start_date=${startDate}&end_date=${endDate}`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("Lỗi khi xuất Excel.");
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `accidents_${startDate}_to_${endDate}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          })
+          .catch(err => {
+            alert("❌ Xuất Excel thất bại.");
+            console.error(err);
+          })
+          .finally(() => {
+            exportButton.disabled = false;
+            exportSpinner.classList.add("d-none");
+          });
+      });
+    });
+</script>
 {% endblock %}

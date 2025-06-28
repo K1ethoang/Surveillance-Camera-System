@@ -1,19 +1,20 @@
 import datetime
 import os
 import uuid
+from django.http import HttpResponse
 from django.shortcuts import render
-from rest_framework import viewsets
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.response import Response
 
 from main_app.forms import AccidentForm
 from django.core.files.base import ContentFile
 from main_app.models import Accident
-from main_app.serializers import AccidentSerializer
 from main_app.services import MongoService
 
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.timezone import now
+from django.db.models import Q
+import openpyxl
+from openpyxl.styles import Font, Alignment, Border, Side
 
 # Create your views here.
 def history_alert_view(request):
@@ -42,7 +43,8 @@ def accident_list_view(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'accident/accident_list.html', {
-        'accidents': page_obj
+        'accidents': page_obj,
+        "now": now()
     })
 
 
@@ -110,3 +112,70 @@ def accident_delete(request, pk):
         accident.delete()
         return redirect('accident')
     return render(request, 'accident/accident_confirm_delete.html', {'accident': accident})
+
+def export_accident_excel(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    filters = Q()
+    if start_date:
+        filters &= Q(created_at__date__gte=start_date)
+    if end_date:
+        filters &= Q(created_at__date__lte=end_date)
+
+    if filters:
+        queryset = Accident.objects.all().filter(filters).order_by('-created_at')
+
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Danh sách tai nạn"
+
+    # Style
+    bold_font = Font(bold=True)
+    center_align = Alignment(horizontal="center", vertical="center")
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin")
+    )
+
+    # Header row
+    headers = ["#", "Thời gian tạo", "Camera Serial", "Người xác nhận"]
+    ws.append(headers)
+
+    for col in ws.iter_cols(min_row=1, max_row=1, min_col=1, max_col=len(headers)):
+        for cell in col:
+            cell.font = bold_font
+            cell.alignment = center_align
+            cell.border = thin_border
+
+    # Data rows
+    for idx, accident in enumerate(queryset, start=1):
+        row = [
+            idx,
+            accident.created_at.strftime('%d/%m/%Y %H:%M:%S'),
+            accident.camera_serial,
+            accident.confirmed_by.email if accident.confirmed_by else "Chưa xác nhận"
+        ]
+        ws.append(row)
+
+        for i, value in enumerate(row, start=1):
+            cell = ws.cell(row=idx + 1, column=i)
+            cell.border = thin_border
+            if i == 1:
+                cell.alignment = center_align
+
+    # Auto-fit column width
+    for col in ws.columns:
+        max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+        adjusted_width = max_length + 2
+        ws.column_dimensions[col[0].column_letter].width = adjusted_width
+
+    # Response
+    filename = f"accidents_{start_date}_to_{end_date}.xlsx"
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response

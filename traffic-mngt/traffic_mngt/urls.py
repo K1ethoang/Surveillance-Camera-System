@@ -28,4 +28,5 @@ urlpatterns = [
     path('accident/add/', accident_create, name='accident_create'),
     path('accident/<uuid:pk>/edit/', accident_update, name='accident_update'),
     path('accident/<uuid:pk>/delete/', accident_delete, name='accident_delete'),
+    path('accident/export/', export_accident_excel, name='accident_export_excel'),
 ]
