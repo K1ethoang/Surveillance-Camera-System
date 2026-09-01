@@ -13,39 +13,39 @@ This is the **system** part of the graduation project *"Research on Object Detec
 
 ```mermaid
 flowchart LR
-    CAM["📹 Camera / video file"]
+    CAM["Camera / video file"]
 
     subgraph SIM["camera-stream-simulator"]
         RTMP["nginx-rtmp + ffmpeg"]
     end
 
-    subgraph AI["ai-system — Django + Ray + YOLO11"]
-        SP["StreamProcessor\n(Ray actor per camera)"]
-        S3[("S3 / MinIO\nsnapshots")]
+    subgraph AI["ai-system (Django + Ray + YOLO11)"]
+        SP["StreamProcessor Ray actor"]
+        S3[("S3 / MinIO snapshots")]
     end
 
     subgraph MB["Kafka"]
         TOPIC(["topic: ai_result"])
     end
 
-    subgraph MNGT["traffic-mngt — Django + Channels"]
-        CONSUMER["check_ai_result\nconsumer"]
-        MONGO[("MongoDB\nhistory_alert")]
-        MYSQL[("MySQL\naccidents")]
-        WS["WebSocket\nalert_group"]
+    subgraph MNGT["traffic-mngt (Django + Channels)"]
+        CONSUMER["check_ai_result consumer"]
+        MONGO[("MongoDB history_alert")]
+        MYSQL[("MySQL accidents")]
+        WS["WebSocket alert_group"]
     end
 
-    BROWSER["🖥️ Browser"]
+    BROWSER["Browser"]
 
-    CAM -- "RTMP stream" --> RTMP
-    RTMP -- "RTMP stream" --> SP
-    SP -- "snapshot" --> S3
-    SP -- "produce detection" --> TOPIC
-    TOPIC -- "consume" --> CONSUMER
+    CAM -->|RTMP stream| RTMP
+    RTMP -->|RTMP stream| SP
+    SP -->|snapshot| S3
+    SP -->|produce detection| TOPIC
+    TOPIC -->|consume| CONSUMER
     CONSUMER --> MONGO
     CONSUMER --> WS
-    WS -- "real-time alert" --> BROWSER
-    BROWSER -- "confirm accident" --> MYSQL
+    WS -->|real-time alert| BROWSER
+    BROWSER -->|confirm accident| MYSQL
 ```
 
 | Component | Role | Tech |
