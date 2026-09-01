@@ -11,13 +11,41 @@ This is the **system** part of the graduation project *"Research on Object Detec
 
 ## Architecture overview
 
-```
-┌─────────────────────┐   RTMP    ┌──────────────────────┐  produce   ┌────────────┐  consume   ┌──────────────────────┐
-│ camera-stream-       │ ────────▶ │ ai-system            │ ─────────▶ │  Kafka     │ ─────────▶ │ traffic-mngt         │
-│ simulator            │  stream   │ (Django + Ray + YOLO)│  topic     │ ai_result  │            │ (Django + Channels)  │
-│ nginx-rtmp + ffmpeg  │           │ read stream, detect, │            └────────────┘            │ consumer → MongoDB   │
-└─────────────────────┘           │ snapshot → S3        │                                     │ + WebSocket → browser│
-                                   └──────────────────────┘                                     └──────────────────────┘
+```mermaid
+flowchart LR
+    CAM["📹 Camera / video file"]
+
+    subgraph SIM["camera-stream-simulator"]
+        RTMP["nginx-rtmp + ffmpeg"]
+    end
+
+    subgraph AI["ai-system — Django + Ray + YOLO11"]
+        SP["StreamProcessor\n(Ray actor per camera)"]
+        S3[("S3 / MinIO\nsnapshots")]
+    end
+
+    subgraph MB["Kafka"]
+        TOPIC(["topic: ai_result"])
+    end
+
+    subgraph MNGT["traffic-mngt — Django + Channels"]
+        CONSUMER["check_ai_result\nconsumer"]
+        MONGO[("MongoDB\nhistory_alert")]
+        MYSQL[("MySQL\naccidents")]
+        WS["WebSocket\nalert_group"]
+    end
+
+    BROWSER["🖥️ Browser"]
+
+    CAM -- "RTMP stream" --> RTMP
+    RTMP -- "RTMP stream" --> SP
+    SP -- "snapshot" --> S3
+    SP -- "produce detection" --> TOPIC
+    TOPIC -- "consume" --> CONSUMER
+    CONSUMER --> MONGO
+    CONSUMER --> WS
+    WS -- "real-time alert" --> BROWSER
+    BROWSER -- "confirm accident" --> MYSQL
 ```
 
 | Component | Role | Tech |
