@@ -11,28 +11,49 @@ This is the **system** part of the graduation project *"Research on Object Detec
 
 ## Architecture overview
 
-```mermaid
-flowchart LR
-    CAM[Camera / video file]
-    RTMP[camera-stream-simulator nginx-rtmp]
-    SP[ai-system StreamProcessor Ray actor]
-    S3[S3 / MinIO snapshots]
-    TOPIC[Kafka topic ai_result]
-    CONSUMER[traffic-mngt check_ai_result consumer]
-    MONGO[MongoDB history_alert]
-    WS[WebSocket alert_group]
-    BROWSER[Browser]
-    MYSQL[MySQL accidents]
-
-    CAM -->|RTMP stream| RTMP
-    RTMP -->|RTMP stream| SP
-    SP -->|snapshot| S3
-    SP -->|produce detection| TOPIC
-    TOPIC -->|consume| CONSUMER
-    CONSUMER --> MONGO
-    CONSUMER --> WS
-    WS -->|real-time alert| BROWSER
-    BROWSER -->|confirm accident| MYSQL
+```text
+      Camera / video file
+              |  RTMP
+              v
+  +-------------------------------+
+  |     camera-stream-simulator   |
+  |       nginx-rtmp + ffmpeg     |
+  +---------------+---------------+
+                  |  RTMP stream
+                  v
+  +-------------------------------------------------+
+  |  ai-system  (Django + Ray + YOLO11)             |
+  |  StreamProcessor = one Ray actor per camera     |
+  |  read stream  ->  detect accident               |
+  +------------+------------------------+------------+
+       snapshot|                        | produce
+               v                        v
+      +----------------+     +-----------------------+
+      |  S3 / MinIO    |     |  Kafka topic          |
+      |  snapshots     |     |  ai_result            |
+      +----------------+     +-----------+-----------+
+                                         |  consume
+                                         v
+  +-------------------------------------------------+
+  |  traffic-mngt  (Django + Channels)              |
+  |  check_ai_result consumer                       |
+  +------------+------------------------+------------+
+               v                        v
+      +----------------+     +-----------------------+
+      |  MongoDB       |     |  WebSocket            |
+      |  history_alert |     |  alert_group          |
+      +----------------+     +-----------+-----------+
+                                         |  real-time alert
+                                         v
+                                +-----------------+
+                                |     Browser     |
+                                +--------+--------+
+                                         |  confirm accident
+                                         v
+                                +-----------------+
+                                |  MySQL          |
+                                |  accidents      |
+                                +-----------------+
 ```
 
 | Component | Role | Tech |
